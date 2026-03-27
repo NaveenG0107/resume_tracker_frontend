@@ -1,91 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const dummyData = [
-  {
-    candidate_id: "1",
-    name: "John Doe",
-    email_address: "john@mail.com",
-    phone_number: "9876543210",
-    location: "Chennai",
-    total_experience: 3,
-    is_active: true,
-    skills: ["Python", "Django"],
-    education: ["B.Tech"],
-    company: ["TCS"],
-    role: ["Developer"]
-  },
-  {
-    candidate_id: "2",
-    name: "Sam Wilson",
-    email_address: "sam@mail.com",
-    phone_number: "9123456780",
-    location: "Bangalore",
-    total_experience: 5,
-    is_active: true,
-    skills: ["React", "Node.js"],
-    education: ["MCA"],
-    company: ["Infosys"],
-    role: ["Senior Dev"]
-  },
-  {
-    candidate_id: "3",
-    name: "Alex Kumar",
-    email_address: "alex@mail.com",
-    phone_number: "9000000000",
-    location: "Hyderabad",
-    total_experience: 2,
-    is_active: false,
-    skills: ["Java"],
-    education: ["B.Tech"],
-    company: ["HCL"],
-    role: ["Junior Dev"]
-  }
-];
+const ITEMS_PER_PAGE = 1;
 
 function Candidates() {
+  const [candidates, setCandidates] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Search & Sort states
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
 
-  // 🔄 Column sorting (optional UI)
-  const handleSort = (field) => {
-    setSortField(field);
+  // Fetch from backend
+  const fetchCandidates = (page) => {
+    console.log("Fetching candidates for page:", page);
+
+    fetch(`http://localhost:8000/api/candidate_info/?page=${page}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("API RESPONSE:", JSON.stringify(data, null, 2));
+
+        const lastItem = data[data.length - 1];
+        const total = lastItem.total_record || 0;
+
+        setTotalRecords(total);
+
+        const rows = data.slice(0, -1);
+        setCandidates(rows);
+      })
+      .catch((err) => console.error("Error fetching candidates:", err));
   };
 
-  const getArrow = (field) => {
-    return sortField === field ? "↑" : "↕";
-  };
+  useEffect(() => {
+    fetchCandidates(currentPage);
+  }, [currentPage]);
 
-  // 🔍 Filter + simple sort (only for UI preview)
-  const processed = [...dummyData]
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+
+  // Apply search + sort ONLY on current page (does NOT break pagination)
+  const processedCandidates = candidates
     .filter((c) =>
-      c.name.toLowerCase().includes(search.toLowerCase())
+      c?.name?.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => {
       if (!sortField) return 0;
 
-      let valA = a[sortField];
-      let valB = b[sortField];
+      let valA = a[sortField] || "";
+      let valB = b[sortField] || "";
 
       if (typeof valA === "string") {
-        return valA.localeCompare(valB);
-      } else {
-        return valA - valB;
+        return sortOrder === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
       }
+      return sortOrder === "asc" ? valA - valB : valB - valA;
     });
+
+  // Sorting toggle
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  // Sort arrow icon
+  const arrowIcon = (field) => {
+    if (sortField !== field) return "↕";
+    return sortOrder === "asc" ? "↑" : "↓";
+  };
 
   return (
     <div className="card p-4">
       <h3 className="mb-3">Candidates</h3>
 
+      {/*SEARCH + SORT */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        
         <input
-          type="text"
           className="form-control w-25"
-          placeholder="Search by name..."
+          placeholder="Search by name…"
           onChange={(e) => setSearch(e.target.value)}
         />
-        
+
         <select
           className="form-select w-auto"
           value={sortField}
@@ -93,88 +92,107 @@ function Candidates() {
         >
           <option value="">Sort By</option>
           <option value="name">Name</option>
-          <option value="total_experience">Experience</option>
           <option value="location">Location</option>
+          <option value="total_experience">Experience</option>
         </select>
       </div>
 
+      {/* TABLE */}
       <div style={{ overflowX: "auto" }}>
         <table className="table table-hover align-middle">
           <thead className="table-light">
             <tr>
-              <th onClick={() => handleSort("name")} style={{ cursor: "pointer" }}>
-                Name {getArrow("name")}
+              <th
+                onClick={() => toggleSort("name")}
+                style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Name <span>{arrowIcon("name")}</span>
               </th>
-              <th onClick={() => handleSort("email_address")} style={{ cursor: "pointer" }}>
-                Email {getArrow("email_address")}
+
+              <th
+                onClick={() => toggleSort("email")}
+                style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Email <span>{arrowIcon("email")}</span>
               </th>
+
               <th>Phone</th>
-              <th onClick={() => handleSort("location")} style={{ cursor: "pointer" }}>
-                Location {getArrow("location")}
+
+              <th
+                onClick={() => toggleSort("location")}
+                style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Location <span>{arrowIcon("location")}</span>
               </th>
-              <th onClick={() => handleSort("total_experience")} style={{ cursor: "pointer" }}>
-                Exp {getArrow("total_experience")}
+
+              <th
+                onClick={() => toggleSort("total_experience")}
+                style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Experience <span>{arrowIcon("total_experience")}</span>
               </th>
+
               <th>Skills</th>
               <th>Education</th>
-              <th>Company</th>
-              <th>Role</th>
-              <th>Status</th>
+              <th>Company Names</th>
             </tr>
           </thead>
 
           <tbody>
-            {processed.map((c) => (
+            {processedCandidates.map((c) => (
               <tr key={c.candidate_id}>
-                
+
+                {/* Name */}
                 <td>
                   <div className="d-flex align-items-center">
                     <div
                       className="bg-success text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
                       style={{ width: 35, height: 35 }}
                     >
-                      {c.name[0]}
+                      {c?.name ? c.name[0] : "?"}
                     </div>
-                    {c.name}
+                    {c?.name || "N/A"}
                   </div>
                 </td>
 
-                <td>{c.email_address}</td>
-                <td>{c.phone_number}</td>
-                <td>{c.location}</td>
-                <td>{c.total_experience} yrs</td>
+                <td>{c?.email || "N/A"}</td>
+                <td>{c?.phone_number || "N/A"}</td>
+                <td>{c?.location || "N/A"}</td>
+                <td>{c?.total_experience ?? "N/A"} yrs</td>
 
+                {/* Skills */}
                 <td>
-                  {c.skills.map((s, i) => (
-                    <span key={i} className="badge bg-success me-1">
-                      {s}
-                    </span>
-                  ))}
-                </td>
-
-                <td>
-                  {c.education.map((e, i) => (
-                    <div key={i}>{e}</div>
-                  ))}
-                </td>
-
-                <td>
-                  {c.company.map((comp, i) => (
-                    <div key={i}>{comp}</div>
-                  ))}
-                </td>
-
-                <td>
-                  {c.role.map((r, i) => (
-                    <div key={i}>{r}</div>
-                  ))}
-                </td>
-
-                <td>
-                  {c.is_active ? (
-                    <span className="badge bg-success">Active</span>
+                  {Array.isArray(c?.skills) && c.skills.length > 0 ? (
+                    c.skills.map((s, i) => (
+                      <span key={i} className="badge bg-success me-1">
+                        {s?.skill || "N/A"}
+                      </span>
+                    ))
                   ) : (
-                    <span className="badge bg-secondary">Inactive</span>
+                    <span className="text-muted">No Skills</span>
+                  )}
+                </td>
+
+                {/* Education (ONLY education name) */}
+                <td>
+                  {Array.isArray(c?.education) && c.education.length > 0 ? (
+                    c.education.map((e, i) => (
+                      <div key={i}>{e?.education || "N/A"}</div>
+                    ))
+                  ) : (
+                    <span className="text-muted">No Education</span>
+                  )}
+                </td>
+
+                {/* Company Names only */}
+                <td>
+                  {Array.isArray(c?.work_experience) &&
+                  c.work_experience.length > 0 ? (
+                    c.work_experience.map((w, i) => (
+                      <div key={i}>{w?.company_name || "N/A"}</div>
+                    ))
+                  ) : (
+                    <span className="text-muted">No Work Experience</span>
                   )}
                 </td>
 
@@ -183,6 +201,40 @@ function Candidates() {
           </tbody>
         </table>
       </div>
+
+      {/* PAGINATION (unchanged and fully working) */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-4">
+          <ul className="pagination">
+            {Array.from({ length: totalPages }).map((_, i) => {
+              const page = i + 1;
+              const active = currentPage === page;
+
+              return (
+                <li key={page} className="page-item mx-1">
+                  <button
+                    onClick={() => setCurrentPage(page)}
+                    className="page-link"
+                    style={{
+                      borderRadius: "50%",
+                      width: "40px",
+                      height: "40px",
+                      backgroundColor: active ? "#198754" : "#fff",
+                      color: active ? "#fff" : "#198754",
+                      border: "1px solid #198754",
+                      lineHeight: "40px",
+                      padding: 0,
+                    }}
+                  >
+                    {page}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
     </div>
   );
 }
