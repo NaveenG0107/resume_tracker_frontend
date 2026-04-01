@@ -1,7 +1,6 @@
-import { computeHeadingLevel } from "@testing-library/dom";
 import { useState, useEffect } from "react";
 
-const ITEMS_PER_PAGE = 1;
+const ITEMS_PER_PAGE = 10;
 
 function Candidates({ filteredCandidates }) {
   const [candidates, setCandidates] = useState([]);
@@ -14,17 +13,22 @@ function Candidates({ filteredCandidates }) {
 
   // Search & Sort states
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortField, setSortField] = useState("None");
+  const [sortOrder, setSortOrder] = useState("None");
 
-  // Fetch from backend
-  const fetchCandidates = (page) => {
-    console.log("Fetching candidates for page:", page);
+  // company 
+  const [selectedWorkExperience, setSelectedWorkExperience] = useState([]);
+  const [selectedCandidateName, setSelectedCandidateName] = useState("");
+  const [showWorkModal, setShowWorkModal] = useState(false);
+
+  const fetchCandidates = (page, sortBy = "None", sortType = "None") => {
+    console.log("Fetching candidates for page:", page, sortBy, sortType);
 
     const params = new URLSearchParams();
     params.append("page", page);
-    params.append("sort_by", "name");
-    params.append("sort_type", "asc");
+
+    if (sortBy) params.append("sort_by", sortBy);
+    if (sortType) params.append("sort_type", sortType);
 
     fetch(`http://localhost:8000/api/candidates/?${params.toString()}`)
       .then((res) => res.json())
@@ -47,30 +51,18 @@ function Candidates({ filteredCandidates }) {
       setCandidates(filteredCandidates);
       setTotalRecords(filteredCandidates.length);
     } else {
-      fetchCandidates(currentPage);
+      fetchCandidates(currentPage, sortField, sortOrder);
     }
   }, [currentPage, filteredCandidates]);
 
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
 
   // Apply search + sort ONLY on current page (does NOT break pagination)
-  const processedCandidates = candidates
-    .filter((c) =>
-      c?.name?.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (!sortField) return 0;
-
-      let valA = a[sortField] || "";
-      let valB = b[sortField] || "";
-
-      if (typeof valA === "string") {
-        return sortOrder === "asc"
-          ? valA.localeCompare(valB)
-          : valB.localeCompare(valA);
-      }
-      return sortOrder === "asc" ? valA - valB : valB - valA;
-    });
+  const displayedCandidates = Array.isArray(candidates)
+    ? candidates.filter((c) =>
+        c?.name?.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
 
   // Sorting toggle
   const toggleSort = (field) => {
@@ -88,6 +80,39 @@ function Candidates({ filteredCandidates }) {
     return sortOrder === "asc" ? "↑" : "↓";
   };
 
+
+  const handleSortChange = (e) => {
+    const selectedField = e.target.value;
+
+    if (!selectedField) return;
+
+    let newSortOrder = "asc";
+
+    if (selectedField === sortField) {
+      newSortOrder = sortOrder === "asc" ? "desc" : "asc";
+    }
+
+    setSortField(selectedField);
+    setSortOrder(newSortOrder);
+
+    // call API immediately when sort changes
+    fetchCandidates(1, selectedField, newSortOrder);
+    setCurrentPage(1);
+  };
+
+  // company modal handle
+  const handleShowWorkExperience = (candidate) => {
+    setSelectedWorkExperience(candidate?.work_experience || []);
+    setSelectedCandidateName(candidate?.name || "Candidate");
+    setShowWorkModal(true);
+  };
+
+  const handleCloseWorkModal = () => {
+    setShowWorkModal(false);
+    setSelectedWorkExperience([]);
+    setSelectedCandidateName("");
+  };
+
   return (
     <div className="card p-4">
       <h3 className="mb-3">Candidates</h3>
@@ -103,12 +128,19 @@ function Candidates({ filteredCandidates }) {
         <select
           className="form-select w-auto"
           value={sortField}
-          onChange={(e) => setSortField(e.target.value)}
+          onChange={handleSortChange}
+          onClick={handleSortChange}
         >
           <option value="">Sort By</option>
-          <option value="name">Name</option>
-          <option value="location">Location</option>
-          <option value="total_experience">Experience</option>
+          <option value="name">
+            Name {sortField === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          </option>
+          <option value="year">
+            Passed Year {sortField === "year" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          </option>
+          <option value="experience">
+            Experience {sortField === "experience" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          </option>
         </select>
       </div>
 
@@ -154,7 +186,7 @@ function Candidates({ filteredCandidates }) {
           </thead>
 
           <tbody>
-            {processedCandidates.map((c) => (
+            {displayedCandidates.map((c) => (
               
               <tr key={c.candidate_id}>
                 {/* Name */}
@@ -176,17 +208,6 @@ function Candidates({ filteredCandidates }) {
                 <td>{c?.total_experience ?? "N/A"} yrs</td>
 
                 {/* Skills */}
-                {/* <td>
-                  {Array.isArray(c?.skills) && c.skills.length > 0 ? (
-                    c.skills.map((s, i) => (
-                      <span key={i} className="badge bg-success me-1">
-                        {s?.skill || "N/A"}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-muted">No Skills</span>
-                  )}
-                </td> */}
                 <td>
                   {Array.isArray(c?.skills) && c.skills.length > 0 ? (
                     <>
@@ -228,7 +249,7 @@ function Candidates({ filteredCandidates }) {
                 </td>
 
                 {/* Company Names only */}
-                <td>
+                {/* <td>
                   {Array.isArray(c?.work_experience) && c.work_experience.length > 0 ? (
                     expandedCandidate === c.candidate_id ? (
                       <>
@@ -247,90 +268,84 @@ function Candidates({ filteredCandidates }) {
                         onClick={() => setExpandedCandidate(c.candidate_id)}
                         className="btn btn-sm btn-link p-0  fs-5 text-decoration-none bg-primary text-white px-3 "
                       >
-                        {c.total_experience || c.work_experience.length}
+                        {c.work_experience.length}
                       </button>
                     )
                   ) : (
                     <span className="text-muted">No Work Experience</span>
                   )}
-                </td>
-
-                {/* <td>
-                  {Array.isArray(c?.work_experience) &&
-                  c.work_experience.length > 0 ? (
-                    c.work_experience.map((w, i) => (
-                      <div key={i}>{w?.company_name || "N/A"}</div>
-                    ))
+                </td> */}
+                <td>
+                  {Array.isArray(c?.work_experience) && c.work_experience.length > 0 ? (
+                    <button
+                      onClick={() => handleShowWorkExperience(c)}
+                      className="btn btn-sm btn-link p-0 fs-5 text-decoration-none bg-primary text-white px-3"
+                    >
+                      {c.work_experience.length}
+                    </button>
                   ) : (
                     <span className="text-muted">No Work Experience</span>
                   )}
-                </td> */}
-
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
 
-      {/* PAGINATION (unchanged and fully working) */}
-      {/* {totalPages > 1 && (
-        <div className="d-flex justify-content-center mt-4">
-          
-          <button
-            style={{
-                    borderRadius: "50%",
-                    width: "40px",
-                    height: "40px",
-                    backgroundColor: "blue",
-                    color: "white",
-                    border: "1px solid #198754",
-                    lineHeight: "40px",
-                    padding: 0,
-                }}>
-                    &lt;
-            </button>
-          <ul className="pagination">
-            {Array.from({ length: totalPages }).map((_, i) => {
-              const page = i + 1;
-              const active = currentPage === page;
-
-              return (
-                <li key={page} className="page-item mx-1">
+        {showWorkModal && (
+          <div
+            className="modal fade show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content rounded-4 shadow">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    {selectedCandidateName} - Work Experience
+                  </h5>
                   <button
-                    onClick={() => setCurrentPage(page)}
-                    className="page-link"
-                    style={{
-                      borderRadius: "50%",
-                      width: "40px",
-                      height: "40px",
-                      backgroundColor: active ? "#198754" : "#fff",
-                      color: active ? "#fff" : "#198754",
-                      border: "1px solid #198754",
-                      lineHeight: "40px",
-                      padding: 0,
-                    }}
+                    type="button"
+                    className="btn-close"
+                    onClick={handleCloseWorkModal}
+                  ></button>
+                </div>
+
+                <div className="modal-body">
+                  {selectedWorkExperience.length > 0 ? (
+                    selectedWorkExperience.map((work, index) => (
+                      
+                      <div
+                        key={index}
+                        className="border rounded p-2 mb-2 bg-light"
+                      >
+                        {/* <p>{work}</p> */}
+                        <div><strong>{index + 1}. {work?.company_name || "N/A"}</strong></div>
+                          <div>Role: {work?.role || "N/A"}</div>
+                          <div>Start Date: {work?.start_date || "N/A"}</div>
+                          <div>End Date: {work?.end_date || "N/A"}</div>
+                          <div>Location: {work?.location || "N/A"}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted mb-0">No Work Experience</p>
+                  )}
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-danger"
+                    onClick={handleCloseWorkModal}
                   >
-                    {page}
+                    Close
                   </button>
-                </li>
-              );
-            })}
-          </ul>
-          <button
-            style={{
-                    borderRadius: "50%",
-                    width: "40px",
-                    height: "40px",
-                    backgroundColor: "blue",
-                    color: "white",
-                    border: "1px solid #198754",
-                    lineHeight: "40px",
-                    padding: 0,
-                }}>
-                    &gt;
-            </button>
-        </div>
-      )} */}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
 
     {totalPages > 1 && (() => {
       const pagesPerGroup = 5;
