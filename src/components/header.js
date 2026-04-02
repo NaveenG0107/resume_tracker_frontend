@@ -110,7 +110,7 @@ function HeaderNavbar() {
             width: "42px",
             height: "42px",
             borderRadius: "50%",
-            backgroundColor: "#dc3545",
+            backgroundColor: "#48a6ee",
             color: "#fff",
             display: "flex",
             alignItems: "center",

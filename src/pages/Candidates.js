@@ -8,7 +8,7 @@ function Candidates({ filteredCandidates }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   // expand work experience
-  const [expandedCandidate, setExpandedCandidate] = useState(null);
+  // const [expandedCandidate, setExpandedCandidate] = useState(null);
   const [expandedSkills, setExpandedSkills] = useState(null);
 
   // Search & Sort states
@@ -81,10 +81,35 @@ function Candidates({ filteredCandidates }) {
   };
 
 
-  const handleSortChange = (e) => {
-    const selectedField = e.target.value;
+  // const handleSortChange = (e) => {
+  //   const selectedField = e.target.value;
 
-    if (!selectedField) return;
+  //   if (!selectedField) return;
+
+  //   let newSortOrder = "asc";
+
+  //   if (selectedField === sortField) {
+  //     newSortOrder = sortOrder === "asc" ? "desc" : "asc";
+  //   }
+
+  //   setSortField(selectedField);
+  //   setSortOrder(newSortOrder);
+
+  //   // call API immediately when sort changes
+  //   fetchCandidates(1, selectedField, newSortOrder);
+  //   setCurrentPage(1);
+  // };
+
+  // Apply soting
+  const handleSortOptionClick = (selectedField) => {
+    if (selectedField === "None") {
+      setSortField("None");
+      setSortOrder("asc");
+      setCurrentPage(1);
+
+      fetchCandidates(1, "", "");
+      return;
+    }
 
     let newSortOrder = "asc";
 
@@ -94,10 +119,9 @@ function Candidates({ filteredCandidates }) {
 
     setSortField(selectedField);
     setSortOrder(newSortOrder);
-
-    // call API immediately when sort changes
-    fetchCandidates(1, selectedField, newSortOrder);
     setCurrentPage(1);
+
+    fetchCandidates(1, selectedField, newSortOrder);
   };
 
   // company modal handle
@@ -125,7 +149,7 @@ function Candidates({ filteredCandidates }) {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <select
+        {/* <select
           className="form-select w-auto"
           value={sortField}
           onChange={handleSortChange}
@@ -141,7 +165,69 @@ function Candidates({ filteredCandidates }) {
           <option value="experience">
             Experience {sortField === "experience" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
           </option>
-        </select>
+        </select> */}
+
+        <div className="dropdown">
+          <button
+            className="btn btn-outline-primary dropdown-toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            {sortField === "None"
+              ? "None"
+              : sortField === "name"
+              ? `Name ${sortOrder === "asc" ? "↑" : "↓"}`
+              : sortField === "year"
+              ? `Passed Year ${sortOrder === "asc" ? "↑" : "↓"}`
+              : sortField === "experience"
+              ? `Experience ${sortOrder === "asc" ? "↑" : "↓"}`
+              : "Sort By"}
+          </button>
+
+          <ul className="dropdown-menu">
+            <li>
+              <button
+                className="dropdown-item"
+                type="button"
+                onClick={() => handleSortOptionClick("None")}
+              >
+                None {sortField === "None" ? (sortOrder === "None") : ""}
+              </button>
+            </li>
+
+            <li>
+              <button
+                className="dropdown-item"
+                type="button"
+                onClick={() => handleSortOptionClick("name")}
+              >
+                Name {sortField === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+              </button>
+            </li>
+
+            <li>
+              <button
+                className="dropdown-item"
+                type="button"
+                onClick={() => handleSortOptionClick("year")}
+              >
+                Passed Year {sortField === "year" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+              </button>
+            </li>
+
+            <li>
+              <button
+                className="dropdown-item"
+                type="button"
+                onClick={() => handleSortOptionClick("experience")}
+              >
+                Experience {sortField === "experience" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+              </button>
+            </li>
+          </ul>
+        </div>
+
       </div>
 
       {/* TABLE */}
@@ -181,7 +267,7 @@ function Candidates({ filteredCandidates }) {
 
               <th>Skills</th>
               <th>Education</th>
-              <th>Company Names</th>
+              <th>Work Experience</th>
             </tr>
           </thead>
 
@@ -193,8 +279,8 @@ function Candidates({ filteredCandidates }) {
                 <td>
                   <div className="d-flex align-items-center">
                     <div
-                      className="bg-danger text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
-                      style={{ width: 35, height: 35 }}
+                      className="text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
+                      style={{ width: 35, height: 35, 'backgroundColor': '#48a6ee' }}
                     >
                       {c?.name ? c.name[0] : "?"}
                     </div>
@@ -313,7 +399,8 @@ function Candidates({ filteredCandidates }) {
 
                 <div className="modal-body">
                   {selectedWorkExperience.length > 0 ? (
-                    selectedWorkExperience.map((work, index) => (
+                    selectedWorkExperience.sort((a, b) => new Date(b.start_date) - new Date(a.start_date))
+                    .map((work, index) => (
                       
                       <div
                         key={index}
@@ -322,6 +409,7 @@ function Candidates({ filteredCandidates }) {
                         {/* <p>{work}</p> */}
                         <div><strong>{index + 1}. {work?.company_name || "N/A"}</strong></div>
                           <div>Role: {work?.role || "N/A"}</div>
+                          {/* <div>Present: {work?.is_present ? "Yes" : "No"}</div> */}
                           <div>Start Date: {work?.start_date || "N/A"}</div>
                           <div>End Date: {work?.end_date || "N/A"}</div>
                           <div>Location: {work?.location || "N/A"}</div>
@@ -371,8 +459,8 @@ function Candidates({ filteredCandidates }) {
               width: "40px",
               height: "40px",
               backgroundColor: startPage === 1 ? "#ccc" : "green",
-              color: startPage === 1 ? "#0084da" : "white",
-              border: "1px solid #0084da",
+              color: startPage === 1 ? "#007bff" : "white",
+              border: "1px solid #007bff",
               fontWeight: "bolder",
               // lineHeight: "40px",
               padding: 0,
@@ -394,9 +482,9 @@ function Candidates({ filteredCandidates }) {
                   width: "40px",
                   height: "40px",
                   margin: "0 5px",
-                  backgroundColor: currentPage === page ? "#0084da" : "#fff",
-                  color: currentPage === page ? "#fff" : "#0084da",
-                  border: "1px solid #0084da",
+                  backgroundColor: currentPage === page ? "#007bff" : "#fff",
+                  color: currentPage === page ? "#fff" : "#007bff",
+                  border: "1px solid #007bff",
                   fontWeight: currentPage === page ? "bold" : "normal",
                   lineHeight: "40px",
                   padding: 0,
@@ -417,7 +505,7 @@ function Candidates({ filteredCandidates }) {
               height: "40px",
               backgroundColor: endPage === totalPages ? "#ccc" : "green",
               color: "white",
-              border: "1px solid #0084da",
+              border: "1px solid #007bff",
               fontWeight: "bolder",
               // lineHeight: "40px",
               padding: 0,

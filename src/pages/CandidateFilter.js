@@ -32,7 +32,7 @@ function CandidateFilter({ setActive, onApplyFilter, onResetFilter }) {
 
   //  Fetch dropdown values
   useEffect(() => {
-    fetch("http://localhost:8000/api/show_filter")
+    fetch("http://localhost:8000/api/filter_options")
       .then((res) => res.json())
       .then((data) => {
         setOptions({

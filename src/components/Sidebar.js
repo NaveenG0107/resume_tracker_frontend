@@ -80,7 +80,7 @@ function Sidebar({ active, setActive }) {
               width: "40px",
               height: "40px",
               borderRadius: "50%",
-              backgroundColor: "#dc3545",
+              backgroundColor: "#48a6ee",
               color: "#fff",
               display: "flex",
               alignItems: "center",
