@@ -61,7 +61,7 @@ function HeaderNavbar() {
         }}
       >
         {/* Notification */}
-        <div
+        {/* <div
           style={{
             width: "40px",
             height: "40px",
@@ -86,10 +86,10 @@ function HeaderNavbar() {
               borderRadius: "50%"
             }}
           />
-        </div>
+        </div>*/}
 
         {/* Settings */}
-        <div
+       {/* <div
           style={{
             width: "40px",
             height: "40px",
@@ -102,7 +102,7 @@ function HeaderNavbar() {
           }}
         >
           <Settings size={18} color="#0d0d0e" />
-        </div>
+        </div> */}
 
         {/* Profile */}
         <div

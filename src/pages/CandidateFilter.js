@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-function CandidateFilter({ setActive, onApplyFilter, onResetFilter }) {
+function CandidateFilter({ onApplyFilter, onResetFilter }) {
+  const navigate = useNavigate();
   const [options, setOptions] = useState({
     skills: [],
     education: [],
@@ -97,7 +99,7 @@ function CandidateFilter({ setActive, onApplyFilter, onResetFilter }) {
         onApplyFilter(data);
       }
 
-      setActive("candidates");
+      navigate("/candidates");
     } catch (error) {
       console.error("Semantic search error:", error);
       setSearchError("Search failed. Try again.");
@@ -134,7 +136,7 @@ function CandidateFilter({ setActive, onApplyFilter, onResetFilter }) {
       onApplyFilter(data);
     }
 
-    setActive("candidates");
+    navigate("/candidates");
     } catch (error) {
       console.error("Filter API error:", error.message);
     }
@@ -155,9 +157,9 @@ function CandidateFilter({ setActive, onApplyFilter, onResetFilter }) {
 
     if (onResetFilter) {
       onResetFilter();
-    } else {
-      setActive("candidates");
     }
+
+    navigate("/candidates");
   };
   // const applyFilter = async () => {
   //   const payload = {

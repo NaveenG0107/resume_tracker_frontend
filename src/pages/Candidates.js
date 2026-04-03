@@ -9,7 +9,8 @@ function Candidates({ filteredCandidates }) {
 
   // expand work experience
   // const [expandedCandidate, setExpandedCandidate] = useState(null);
-  const [expandedSkills, setExpandedSkills] = useState(null);
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
+  const [skillsModalData, setSkillsModalData] = useState({ candidateName: "", skills: [] });
 
   // Search & Sort states
   const [search, setSearch] = useState("");
@@ -46,14 +47,23 @@ function Candidates({ filteredCandidates }) {
       .catch((err) => console.error("Error fetching candidates:", err));
   };
 
+  // useEffect(() => {
+  //   if (filteredCandidates && Array.isArray(filteredCandidates)) {
+  //     setCandidates(filteredCandidates);
+  //     setTotalRecords(filteredCandidates.length);
+  //   } else {
+  //     fetchCandidates(currentPage, sortField, sortOrder);
+  //   }
+  // }, [currentPage, filteredCandidates]);
+
   useEffect(() => {
-    if (filteredCandidates && Array.isArray(filteredCandidates)) {
-      setCandidates(filteredCandidates);
-      setTotalRecords(filteredCandidates.length);
-    } else {
-      fetchCandidates(currentPage, sortField, sortOrder);
-    }
-  }, [currentPage, filteredCandidates]);
+  if (filteredCandidates && Array.isArray(filteredCandidates)) {
+    setCandidates(filteredCandidates);
+    setTotalRecords(filteredCandidates.length);
+  } else {
+    fetchCandidates(currentPage, sortField, sortOrder);
+  }
+}, [currentPage, filteredCandidates, sortField, sortOrder]);
 
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
 
@@ -166,8 +176,8 @@ function Candidates({ filteredCandidates }) {
             Experience {sortField === "experience" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
           </option>
         </select> */}
-
         <div className="dropdown">
+          <p className="dropdown-header text-black fs-5">sort by</p>
           <button
             className="btn btn-outline-primary dropdown-toggle"
             type="button"
@@ -232,7 +242,7 @@ function Candidates({ filteredCandidates }) {
 
       {/* TABLE */}
       <div style={{ overflowX: "auto" }}>
-        <table className="table table-hover align-middle table-bordered">
+        <table className="table table-hover align-middle table-bordered" style={{ tableLayout: "auto", width: "100%" }}>
           <thead className="table-light">
             <tr>
               <th
@@ -246,7 +256,7 @@ function Candidates({ filteredCandidates }) {
                 onClick={() => toggleSort("email")}
                 style={{ cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                Email <span>{arrowIcon("email")}</span>
+                 Email {/* <span> {arrowIcon("email")}</span> */}
               </th>
 
               <th>Phone</th>
@@ -255,14 +265,14 @@ function Candidates({ filteredCandidates }) {
                 onClick={() => toggleSort("location")}
                 style={{ cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                Location <span>{arrowIcon("location")}</span>
+                Location {/*<span>{arrowIcon("location")}</span> */}
               </th>
 
               <th
-                onClick={() => toggleSort("total_experience")}
+                onClick={() => toggleSort("experience")}
                 style={{ cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                Experience <span>{arrowIcon("total_experience")}</span>
+                Experience <span>{arrowIcon("experience")}</span>
               </th>
 
               <th>Skills</th>
@@ -297,25 +307,23 @@ function Candidates({ filteredCandidates }) {
                 <td>
                   {Array.isArray(c?.skills) && c.skills.length > 0 ? (
                     <>
-                      {(expandedSkills === c.candidate_id ? c.skills : c.skills.slice(0, 4)).map((s, i) => (
-                        <span key={i} className="badge  me-1 mb-1" style={{'backgroundColor': '#48a6ee'}}>
+                      {c.skills.slice(0, 3).map((s, i) => (
+                        <span key={i} className="badge me-1 mb-1" style={{ backgroundColor: "#48a6ee" }}>
                           {s?.skill || "N/A"}
                         </span>
                       ))}
 
                       {c.skills.length > 3 && (
-                        <div className="mt-1">
-                          <button
-                            onClick={() =>
-                              setExpandedSkills(
-                                expandedSkills === c.candidate_id ? null : c.candidate_id
-                              )
-                            }
-                            className="btn btn-sm btn-link p-0"
-                          >
-                            {expandedSkills === c.candidate_id ? "Hide" : "Expand"}
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => {
+                            setSkillsModalData({ candidateName: c?.name || "Candidate", skills: c.skills });
+                            setShowSkillsModal(true);
+                          }}
+                          className="btn btn-sm btn-link p-0 ms-2"
+                          style={{ display: "inline", lineHeight: "1.8" }}
+                        >
+                          more...
+                        </button>
                       )}
                     </>
                   ) : (
@@ -362,21 +370,74 @@ function Candidates({ filteredCandidates }) {
                   )}
                 </td> */}
                 <td>
-                  {Array.isArray(c?.work_experience) && c.work_experience.length > 0 ? (
-                    <button
-                      onClick={() => handleShowWorkExperience(c)}
-                      className="btn btn-sm btn-link p-0 fs-5 text-decoration-none bg-primary text-white px-3"
-                    >
-                      {c.work_experience.length}
-                    </button>
+                  {Array.isArray(c?.work_experience) ? (
+                    c.work_experience.length > 0 ? (
+                      <button
+                        onClick={() => handleShowWorkExperience(c)}
+                        className="btn btn-sm btn-link p-0 fs-5 text-decoration-none bg-primary text-white px-3"
+                      >
+                        {c.work_experience.length}
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-sm text-white fs-5 px-3"
+                        disabled
+                        style={{ cursor: "not-allowed", backgroundColor: "#5a5c62", borderColor: "#5a5c62" }}
+                      >
+                        0
+                      </button>
+                    )
                   ) : (
-                    <span className="text-muted">No Work Experience</span>
+                    <button
+                      className="btn btn-sm text-white fs-5 px-3"
+                      disabled
+                      style={{ cursor: "not-allowed", backgroundColor: "#5a5c62", borderColor: "#5a5c62" }}
+                    >
+                      0
+                    </button>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {showSkillsModal && (
+          <div
+            className="modal fade show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content rounded-4 shadow">
+                <div className="modal-header">
+                  <h5 className="modal-title">{skillsModalData.candidateName} - All Skills</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowSkillsModal(false)}></button>
+                </div>
+                <div className="modal-body" style={{ maxHeight: "340px", overflowY: "auto" }}>
+                  {skillsModalData.skills.length > 0 ? (
+                    skillsModalData.skills.map((s, i) => (
+                      <span
+                        key={i}
+                        className="badge me-1 mb-1"
+                        style={{ backgroundColor: "#48a6ee", whiteSpace: "normal", wordBreak: "break-word", maxWidth: "100%" }}
+                      >
+                        {s?.skill || "N/A"}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-muted">No skills available</p>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowSkillsModal(false)}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showWorkModal && (
           <div

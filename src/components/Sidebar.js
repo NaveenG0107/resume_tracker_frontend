@@ -43,17 +43,21 @@
 
 
 
-function Sidebar({ active, setActive }) {
+import { NavLink } from "react-router-dom";
+
+function Sidebar() {
   const menu = [
-    { key: "dashboard", label: "Dashboard" },
-    { key: "candidates", label: "Candidates" },
-    { key: "candidateFilter", label: "Candidate Filter" }
+    { key: "dashboard", label: "Dashboard", path: "/dashboard" },
+    { key: "candidates", label: "Candidates", path: "/candidates" },
+    { key: "candidateFilter", label: "Candidate Filter", path: "/candidate-filter" }
   ];
 
   return (
     <div
       style={{
         width: "240px",
+        minWidth: "240px",
+        flexShrink: 0,
         minHeight: "90vh",
         backgroundColor: "#e0eaf1",
         borderRight: "1px solid #e5e7eb",
@@ -65,109 +69,29 @@ function Sidebar({ active, setActive }) {
     >
       {/* Top Section */}
       <div>
-        {/* Title */}
-        <div
-          style={{
-            padding: "20px 18px",
-            borderBottom: "1px solid #e5e7eb",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px"
-          }}
-        >
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "#48a6ee",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-              fontSize: "18px"
-            }}
-          >
-            U
-          </div>
-
-          <div>
-            <h5
-              style={{
-                margin: 0,
-                color: "#111827",
-                fontWeight: "700",
-                fontSize: "18px"
-              }}
-            >
-              username
-            </h5>
-            <small style={{ color: "#6b7280" }}>Dashboard Panel</small>
-          </div>
-        </div>
-
         {/* Menu */}
         <div style={{ padding: "14px 10px" }}>
-          {menu.map((item) => {
-            const isActive = active === item.key;
-
-            return (
-              <div
-                key={item.key}
-                onClick={() => setActive(item.key)}
-                style={{
-                  cursor: "pointer",
-                  padding: "12px 16px",
-                  width: "100%",
-                  borderRadius: "12px",
-                  marginBottom: "8px",
-                  backgroundColor: isActive ? "#0084da" : "transparent",
-                  color: isActive ? "#fff" : "#0084da",
-                  fontWeight: isActive ? "600" : "500",
-                  transition: "all 0.25s ease",
-                  border: isActive ? "none" : "1px solid transparent"
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = "#0084da20";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }
-                }}
-              >
-                {item.label}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Logout at Bottom */}
-      <div style={{ padding: "14px 10px" }}>
-        <div
-          style={{
-            cursor: "pointer",
-            padding: "12px 16px",
-            width: "100%",
-            borderRadius: "12px",
-            backgroundColor: "#fff5f5",
-            color: "#dc2626",
-            fontWeight: "600",
-            border: "1px solid #fecaca",
-            transition: "all 0.25s ease"
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#fee2e2";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#fff5f5";
-          }}
-        >
-          Logout
+          {menu.map((item) => (
+            <NavLink
+              key={item.key}
+              to={item.path}
+              style={({ isActive }) => ({
+                cursor: "pointer",
+                display: "block",
+                padding: "12px 16px",
+                width: "100%",
+                borderRadius: "12px",
+                marginBottom: "8px",
+                backgroundColor: isActive ? "#0084da" : "transparent",
+                color: isActive ? "#fff" : "#0084da",
+                fontWeight: isActive ? "600" : "500",
+                transition: "all 0.25s ease",
+                textDecoration: "none"
+              })}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </div>
       </div>
     </div>
